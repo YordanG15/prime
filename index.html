@@ -16,11 +16,7 @@
             --border-color: rgba(0, 240, 255, 0.2);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Inter', sans-serif;
@@ -94,9 +90,7 @@
             animation: fadeIn 0.4s ease forwards;
         }
 
-        .tab-content.active {
-            display: block;
-        }
+        .tab-content.active { display: block; }
 
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
@@ -162,15 +156,10 @@
             border-radius: 12px;
             overflow: hidden;
             border: 1px solid var(--border-color);
-            background: #fff; /* Fondo blanco para que la hoja de cálculo sea legible */
-        }
-        
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
+            background: #fff;
         }
 
+        iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
@@ -192,21 +181,21 @@
             <div class="grid-container">
                 <div class="card">
                     <h3>Peso Corporal Actual</h3>
-                    <div class="stat-value">70.0 kg</div>
+                    <div class="stat-value" id="ui-peso">Cargando...</div>
                 </div>
                 <div class="card">
                     <h3>Volumen Semanal Levantado</h3>
-                    <div class="stat-value">12,450 kg</div>
+                    <div class="stat-value" id="ui-volumen">Cargando...</div>
                 </div>
                 <div class="card">
                     <h3>Gasto Total del Mes</h3>
-                    <div class="stat-value">$145,000 CLP</div>
+                    <div class="stat-value" id="ui-gastos">Cargando...</div>
                 </div>
-            </div>
-            <div class="card">
-                <h3>Balance Global de Rendimiento</h3>
-                <div class="chart-container" style="height: 300px;">
-                    <canvas id="radarChart"></canvas>
+                <div class="card">
+                    <h3>Balance Global de Rendimiento</h3>
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="radarChart"></canvas>
+                    </div>
                 </div>
             </div>
         </section>
@@ -216,19 +205,16 @@
             <h2>Registro de Entrenamiento</h2>
             <div class="grid-container">
                 <div class="card">
-                    <h3>Frecuencia Cardíaca (Ciclismo Estacionario)</h3>
+                    <h3>Progresión de Cardio (Bicicleta)</h3>
                     <div class="chart-container">
                         <canvas id="cardioChart"></canvas>
                     </div>
                 </div>
                 <div class="card">
                     <h3>Tabla de Rutina (Google Sheets)</h3>
-                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">
-                        *Reemplaza el src del iframe con el enlace de publicación de tu tabla.*
-                    </p>
                     <div class="sheets-container">
-                        <!-- Ejemplo de Iframe de Google Sheets -->
-                        <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQ_T_Placeholder/pubhtml?widget=true&amp;headers=false"></iframe>
+                        <!-- INSERTA AQUÍ EL IFRAME DE TUS ENTRENAMIENTOS -->
+                        <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-XXX/pubhtml?widget=true&amp;headers=false"></iframe>
                     </div>
                 </div>
             </div>
@@ -236,7 +222,7 @@
 
         <!-- SECCIÓN 3: EJERCICIOS -->
         <section id="ejercicios" class="tab-content">
-            <h2>Progresión de Cargas (1RM)</h2>
+            <h2>Progresión de Cargas</h2>
             <div class="card" style="margin-bottom: 2rem;">
                 <h3>Evolución: Deadlift, Hip Thrust y Bench Press</h3>
                 <div class="chart-container" style="height: 350px;">
@@ -247,7 +233,8 @@
             <div class="card">
                 <h3>Base de Datos de Ejercicios (Google Sheets)</h3>
                 <div class="sheets-container" style="height: 300px;">
-                    <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQ_T_Placeholder/pubhtml?widget=true&amp;headers=false"></iframe>
+                    <!-- INSERTA AQUÍ EL IFRAME DE TUS EJERCICIOS -->
+                    <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-XXX/pubhtml?widget=true&amp;headers=false"></iframe>
                 </div>
             </div>
         </section>
@@ -264,11 +251,9 @@
                 </div>
                 <div class="card">
                     <h3>Registro Contable (Google Sheets)</h3>
-                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">
-                        *Aquí puedes incrustar tu hoja principal de control financiero.*
-                    </p>
                     <div class="sheets-container">
-                        <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQ_T_Placeholder/pubhtml?widget=true&amp;headers=false"></iframe>
+                        <!-- INSERTA AQUÍ EL IFRAME DE TUS FINANZAS -->
+                        <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-XXX/pubhtml?widget=true&amp;headers=false"></iframe>
                     </div>
                 </div>
             </div>
@@ -278,105 +263,157 @@
     <script>
         // Lógica de navegación entre pestañas
         function switchTab(event, tabId) {
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             event.currentTarget.classList.add('active');
         }
 
-        // Configuración Global de Chart.js para estilo oscuro/minimalista
+        // Configuración Global de Chart.js
         Chart.defaults.color = '#94a3b8';
         Chart.defaults.font.family = 'Inter';
         Chart.defaults.scale.grid.color = 'rgba(255, 255, 255, 0.05)';
 
-        // 1. Gráfico Radar (Página Principal)
-        new Chart(document.getElementById('radarChart'), {
+        // ==========================================
+        // 🚀 ZONA DE CONEXIÓN A GOOGLE SHEETS
+        // ==========================================
+        const API_URL = "https://script.google.com/macros/s/AKfycbyMOOLGa48_yP9Snd90YnWOHsx0Cl5zLogStCbSeKl5P43qOVpHGL3JYz74EWkMP6WOfw/exec"; // <-- ¡REEMPLAZA ESTO!
+
+        // Instancias de Gráficos vacíos (se llenarán al descargar datos)
+        const radarChart = new Chart(document.getElementById('radarChart'), {
             type: 'radar',
             data: {
-                labels: ['Fuerza Bruta', 'Resistencia Cardio', 'Disciplina de Gasto', 'Descanso', 'Estudio/Productividad'],
-                datasets: [{
-                    label: 'Métricas Actuales',
-                    data: [85, 70, 60, 75, 90],
-                    backgroundColor: 'rgba(0, 240, 255, 0.2)',
-                    borderColor: '#00f0ff',
-                    pointBackgroundColor: '#fff',
-                    borderWidth: 2
-                }]
+                labels: ['Fuerza', 'Cardio', 'Disciplina Gasto', 'Estudio'],
+                datasets: [{ label: 'Métricas Reales', data: [0,0,0,0], backgroundColor: 'rgba(0, 240, 255, 0.2)', borderColor: '#00f0ff', borderWidth: 2 }]
             },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { r: { angleLines: { color: 'rgba(255, 255, 255, 0.1)' }, grid: { color: 'rgba(255, 255, 255, 0.1)' } } }
-            }
+            options: { responsive: true, maintainAspectRatio: false, scales: { r: { angleLines: { color: 'rgba(255,255,255,0.1)' } } } }
         });
 
-        // 2. Gráfico de Cardio (Entrenamiento)
-        new Chart(document.getElementById('cardioChart'), {
+        const cardioChart = new Chart(document.getElementById('cardioChart'), {
             type: 'line',
-            data: {
-                labels: ['Lun', 'Mar', 'Jue', 'Sab'],
-                datasets: [{
-                    label: 'BPM Promedio',
-                    data: [135, 142, 138, 145],
-                    borderColor: '#00f0ff',
-                    tension: 0.4,
-                    borderWidth: 2,
-                    pointRadius: 4
-                }]
-            },
+            data: { labels: [], datasets: [{ label: 'Tiempo/Nivel', data: [], borderColor: '#00f0ff', tension: 0.4, borderWidth: 2 }] },
             options: { responsive: true, maintainAspectRatio: false }
         });
 
-        // 3. Gráfico de Fuerza (Ejercicios)
-        new Chart(document.getElementById('strengthChart'), {
+        const strengthChart = new Chart(document.getElementById('strengthChart'), {
             type: 'line',
             data: {
-                labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'],
+                labels: [],
                 datasets: [
-                    {
-                        label: 'Deadlift (kg)',
-                        data: [130, 140, 145, 150],
-                        borderColor: '#00f0ff',
-                        backgroundColor: 'rgba(0, 240, 255, 0.1)',
-                        tension: 0.3, fill: true
-                    },
-                    {
-                        label: 'Hip Thrust (kg)',
-                        data: [125, 135, 145, 150],
-                        borderColor: '#9d00ff',
-                        tension: 0.3
-                    },
-                    {
-                        label: 'Bench Press (kg)',
-                        data: [80, 85, 87.5, 90],
-                        borderColor: '#ff0055',
-                        tension: 0.3
-                    }
+                    { label: 'Peso Muerto (kg)', data: [], borderColor: '#00f0ff', backgroundColor: 'rgba(0, 240, 255, 0.1)', tension: 0.3, fill: true },
+                    { label: 'Hip Thrust (kg)', data: [], borderColor: '#9d00ff', tension: 0.3 },
+                    { label: 'Press Banca (kg)', data: [], borderColor: '#ff0055', tension: 0.3 }
                 ]
             },
             options: { responsive: true, maintainAspectRatio: false }
         });
 
-        // 4. Gráfico Doughnut (Gastos)
-        new Chart(document.getElementById('expensesChart'), {
+        const expensesChart = new Chart(document.getElementById('expensesChart'), {
             type: 'doughnut',
-            data: {
-                labels: ['China Wok / Poked', 'Uber / Movilidad', 'Mercado Libre', 'Suscripciones (AI/Juegos)'],
-                datasets: [{
-                    data: [45, 25, 20, 10],
-                    backgroundColor: ['#00f0ff', '#0055ff', '#9d00ff', '#222233'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                cutout: '75%',
-                plugins: { legend: { position: 'bottom' } }
-            }
+            data: { labels: [], datasets: [{ data: [], backgroundColor: ['#00f0ff', '#ff0055', '#9d00ff', '#222233', '#facc15', '#4ade80'], borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'bottom' } } }
         });
+
+        // 📥 FUNCIÓN MAESTRA: DESCARGAR TODOS LOS DATOS
+        async function cargarDatos() {
+            try {
+                // Hacemos las 3 llamadas al mismo tiempo para que sea más rápido
+                const [finanzasRes, ejerciciosRes, estudiosRes] = await Promise.all([
+                    fetch(API_URL).then(r => r.json()),
+                    fetch(API_URL + "?tab=ejercicio").then(r => r.json()),
+                    fetch(API_URL + "?tab=estudio").then(r => r.json())
+                ]);
+
+                procesarFinanzas(finanzasRes);
+                procesarEjercicios(ejerciciosRes);
+                procesarRadar(finanzasRes, ejerciciosRes, estudiosRes);
+                
+            } catch (error) {
+                console.error("Error al sincronizar con Google Sheets:", error);
+            }
+        }
+
+        function procesarFinanzas(datos) {
+            // Filtrar solo los gastos de este mes
+            const mesActual = new Date().toISOString().slice(0, 7); // ej: "2026-09"
+            const gastos = datos.filter(d => d.Tipo === 'Gasto');
+            
+            let totalMes = 0;
+            const categoriasObj = {};
+
+            gastos.forEach(g => {
+                let fechaGasto = new Date(g.Fecha).toISOString().slice(0, 7);
+                let monto = Number(g.Monto) || 0;
+                
+                if (fechaGasto === mesActual) { totalMes += monto; }
+                
+                // Sumar para el gráfico de dona
+                categoriasObj[g.Categoría] = (categoriasObj[g.Categoría] || 0) + monto;
+            });
+
+            // Actualizar Tarjeta de Texto
+            document.getElementById('ui-gastos').innerText = "$" + totalMes.toLocaleString('es-CL');
+
+            // Actualizar Gráfico de Dona
+            expensesChart.data.labels = Object.keys(categoriasObj);
+            expensesChart.data.datasets[0].data = Object.values(categoriasObj);
+            expensesChart.update();
+        }
+
+        function procesarEjercicios(datos) {
+            // 1. Peso Corporal (buscar el último registro)
+            const pesosCorp = datos.filter(d => d.Ejercicio === 'Peso Corporal' || d.Ejercicio === 'Peso');
+            if(pesosCorp.length > 0) {
+                document.getElementById('ui-peso').innerText = pesosCorp[pesosCorp.length - 1].Carga + " kg";
+            }
+
+            // 2. Volumen Semanal (Últimos 7 días)
+            const haceUnaSemana = new Date();
+            haceUnaSemana.setDate(haceUnaSemana.getDate() - 7);
+            let volumen = 0;
+            datos.forEach(d => {
+                if(new Date(d.Fecha) >= haceUnaSemana && !['Peso Corporal', 'Bicicleta Estática', 'Bicicleta'].includes(d.Ejercicio)) {
+                    volumen += (Number(d.Carga) || 0) * (Number(d.Repeticiones) || 1); // Carga x Reps
+                }
+            });
+            document.getElementById('ui-volumen').innerText = volumen.toLocaleString('es-CL') + " kg";
+
+            // 3. Gráfico de Fuerza
+            const pesoMuerto = datos.filter(d => d.Ejercicio === 'Peso Muerto');
+            const hipThrust = datos.filter(d => d.Ejercicio === 'Hip Thrust');
+            const pressBanca = datos.filter(d => d.Ejercicio === 'Press Banca');
+            
+            // Usamos las fechas de cualquier ejercicio fuerte como eje X
+            const fechasFuerza = [...new Set(pesoMuerto.concat(hipThrust, pressBanca).map(d => new Date(d.Fecha).toLocaleDateString('es-CL', {day: '2-digit', month: '2-digit'})))];
+            
+            strengthChart.data.labels = fechasFuerza;
+            strengthChart.data.datasets[0].data = pesoMuerto.map(d => d.Carga);
+            strengthChart.data.datasets[1].data = hipThrust.map(d => d.Carga);
+            strengthChart.data.datasets[2].data = pressBanca.map(d => d.Carga);
+            strengthChart.update();
+
+            // 4. Gráfico de Cardio
+            const cardio = datos.filter(d => d.Ejercicio.includes('Bicicleta'));
+            cardioChart.data.labels = cardio.map(d => new Date(d.Fecha).toLocaleDateString('es-CL', {day: '2-digit', month: '2-digit'}));
+            cardioChart.data.datasets[0].data = cardio.map(d => d.Carga);
+            cardioChart.update();
+        }
+
+        function procesarRadar(finanzas, ejercicios, estudios) {
+            // Algoritmo simple de gamificación (puntajes de 0 a 100 basados en actividad reciente)
+            const ptsFuerza = Math.min(100, ejercicios.filter(d => !d.Ejercicio.includes('Bicicleta') && d.Ejercicio !== 'Peso Corporal').length * 10);
+            const ptsCardio = Math.min(100, ejercicios.filter(d => d.Ejercicio.includes('Bicicleta')).length * 15);
+            const ptsEstudio = Math.min(100, estudios.length * 5);
+            
+            // Disciplina de gasto: mientras menos gastos tipo "hormiga" u "Otros", mejor puntaje. 
+            const ptsFinanzas = Math.max(0, 100 - (finanzas.filter(d => d.Tipo === 'Gasto').length * 3));
+
+            radarChart.data.datasets[0].data = [ptsFuerza, ptsCardio, ptsFinanzas, ptsEstudio];
+            radarChart.update();
+        }
+
+        // Ejecutar la magia al cargar la página
+        cargarDatos();
     </script>
 </body>
 </html>
