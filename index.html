@@ -9,11 +9,11 @@
     <style>
         :root {
             --bg-color: #050507;
-            --surface-color: rgba(20, 20, 28, 0.7);
+            --surface-color: rgba(10, 10, 20, 0.7);
             --accent-color: #00f0ff;
-            --text-main: #e2e8f0;
+            --text-main: #f8fafc;
             --text-muted: #94a3b8;
-            --border-color: rgba(0, 240, 255, 0.2);
+            --border-color: rgba(0, 240, 255, 0.15);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -148,7 +148,6 @@
     </style>
 </head>
 <body>
-
     <nav>
         <div class="brand">NEXUS</div>
         <button class="nav-btn active" onclick="switchTab(event, 'principal')">01. Página Principal</button>
@@ -164,19 +163,19 @@
             <div class="grid-container">
                 <div class="card">
                     <h3>Peso Corporal Actual</h3>
-                    <div class="stat-value" id="ui-peso">70 kg</div>
+                    <div class="stat-value" id="el-peso">-- kg</div>
                 </div>
                 <div class="card">
                     <h3>Volumen Semanal Levantado</h3>
-                    <div class="stat-value" id="ui-volumen">0 kg</div>
+                    <div class="stat-value" id="el-volumen">-- kg</div>
                 </div>
                 <div class="card">
                     <h3>Gasto Total del Mes</h3>
-                    <div class="stat-value" id="ui-gastos">$0</div>
+                    <div class="stat-value" id="el-gasto">$--</div>
                 </div>
                 <div class="card">
                     <h3>Balance Global de Rendimiento</h3>
-                    <div class="chart-container" style="height: 300px;">
+                    <div class="chart-container" style="height: 180px;">
                         <canvas id="radarChart"></canvas>
                     </div>
                 </div>
@@ -224,8 +223,8 @@
                 </div>
                 <div class="card">
                     <h3>Últimos Temas Estudiados</h3>
-                    <div style="overflow-x:auto;">
-                        <table style="width:100%; text-align:left; border-collapse: collapse; color: var(--text-main); font-size: 0.9rem;">
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; text-align: left; border-collapse: collapse; color: var(--text-main); font-size: 0.9rem;">
                             <thead>
                                 <tr style="border-bottom: 1px solid var(--border-color); color: var(--accent-color);">
                                     <th style="padding: 10px;">Fecha</th>
@@ -234,7 +233,9 @@
                                 </tr>
                             </thead>
                             <tbody id="tabla-estudio">
-                                <tr><td colspan="3" style="padding:10px;">Sin registros recientes</td></tr>
+                                <tr>
+                                    <td colspan="3" style="padding: 10px;">Sin registros recientes</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -244,24 +245,31 @@
     </main>
 
     <script>
-   function switchTab(event, tabId) {
+        // Sistema de navegación blindado globalmente
+        window.switchTab = function(event, tabId) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            event.currentTarget.classList.add('active');
-        }
+            
+            const targetTab = document.getElementById(tabId);
+            if(targetTab) targetTab.classList.add('active');
+            
+            if(event) {
+                const btn = event.currentTarget || (event.target && event.target.closest('.nav-btn'));
+                if(btn) btn.classList.add('active');
+            }
+        };
 
         Chart.defaults.color = '#94a3b8';
         Chart.defaults.font.family = 'Inter';
         Chart.defaults.scale.grid.color = 'rgba(255, 255, 255, 0.05)';
 
-        // URL de tu API de Google Apps Script
+        // URL de tu API
         const API_URL = "https://script.google.com/macros/s/AKfycbRXXLGo48_y9P2nd9DVnqGQqq0CiSziLxgS7cbGmTJP41gVVpIGLl1Vs74Ddd9PGH0fw/exec";
 
         const radarChart = new Chart(document.getElementById('radarChart'), {
             type: 'radar',
             data: {
-                labels: ['Fuerza', 'Cardio', 'Disciplina Resto', 'Estudio'],
+                labels: ['Fuerza', 'Cardio', 'Disciplina Peso', 'Estudio'],
                 datasets: [{ label: 'Métricas Reales', data: [0,0,0,0], backgroundColor: 'rgba(0, 240, 255, 0.2)', borderColor: '#00f0ff', borderWidth: 2 }]
             },
             options: { responsive: true, maintainAspectRatio: false, scales: { r: { angleLines: { color: 'rgba(255,255,255,0.1)' } } } }
@@ -300,7 +308,6 @@
 
         async function cargarDatos() {
             try {
-                // Se agregó la llamada a ?tab=peso para leer la nueva hoja
                 const [finanzas, ejercicios, estudios, pesos] = await Promise.all([
                     fetch(API_URL).then(r => r.json()),
                     fetch(API_URL + "?tab=ejercicio").then(r => r.json()),
@@ -327,6 +334,7 @@
             let categoriasObj = {};
 
             gastos.forEach(g => {
+                if(!g.Fecha) return;
                 let fechaGasto = new Date(g.Fecha).toISOString().slice(0, 7);
                 let monto = Number(g.Monto) || 0;
                 
@@ -344,12 +352,13 @@
         }
 
         function procesarPeso(pesos) {
-            // Extrae el último peso de la nueva pestaña dedicada
             if (pesos && pesos.length > 0) {
-                let ultimoRegistro = pesos[pesos.length - 1];
-                let pesoActual = ultimoRegistro['Peso (kg)'] || ultimoRegistro.Peso;
-                if (pesoActual) {
-                    document.getElementById('el-peso').innerText = pesoActual + " kg";
+                // Filtramos elementos vacíos
+                let pesosValidos = pesos.filter(p => p['Peso (kg)'] || p.Peso);
+                if(pesosValidos.length > 0) {
+                    let ultimoRegistro = pesosValidos[pesosValidos.length - 1];
+                    let pesoActual = ultimoRegistro['Peso (kg)'] || ultimoRegistro.Peso;
+                    if (pesoActual) document.getElementById('el-peso').innerText = pesoActual + " kg";
                 }
             }
         }
@@ -360,9 +369,9 @@
             
             let volumen = 0;
             datos.forEach(d => {
+                if(!d.Fecha) return;
                 let fechaDate = new Date(d.Fecha);
                 if (fechaDate >= haceUnaSemana && !String(d.Ejercicio).includes('Bicicleta')) {
-                    // Corrección de variable Carga a Peso (kg) según Excel
                     let carga = Number(d['Peso (kg)']) || Number(d.Carga) || 0;
                     let reps = Number(d.Repeticiones) || 1;
                     volumen += carga * reps;
@@ -370,11 +379,15 @@
             });
             document.getElementById('el-volumen').innerText = volumen.toLocaleString('es-CL') + " kg";
 
-            const pesoMuerto = datos.filter(d => d.Ejercicio === 'Peso Muerto');
-            const hipThrust = datos.filter(d => d.Ejercicio === 'Hip Thrust');
-            const pressBanca = datos.filter(d => String(d.Ejercicio).includes('Press Banca') || String(d.Ejercicio).includes('Press de Banca'));
+            // Filtros blindados para que las fechas en blanco no rompan la gráfica
+            const pesoMuerto = datos.filter(d => d.Fecha && String(d.Ejercicio).includes('Peso Muerto'));
+            const hipThrust = datos.filter(d => d.Fecha && String(d.Ejercicio).includes('Hip Thrust'));
+            const pressBanca = datos.filter(d => d.Fecha && (String(d.Ejercicio).includes('Press Banca') || String(d.Ejercicio).includes('Press de Banca')));
 
-            const fechasFuerza = [...new Set(pesoMuerto.concat(hipThrust, pressBanca).map(d => new Date(d.Fecha).toLocaleDateString('es-CL', {day: '2-digit', month: '2-digit'})))];
+            const fechasFuerza = [...new Set(
+                pesoMuerto.concat(hipThrust, pressBanca)
+                .map(d => new Date(d.Fecha).toLocaleDateString('es-CL', {day: '2-digit', month: '2-digit'}))
+            )];
             
             strengthChart.data.labels = fechasFuerza;
             strengthChart.data.datasets[0].data = pesoMuerto.map(d => Number(d['Peso (kg)']) || Number(d.Carga) || 0);
@@ -382,7 +395,7 @@
             strengthChart.data.datasets[2].data = pressBanca.map(d => Number(d['Peso (kg)']) || Number(d.Carga) || 0);
             strengthChart.update();
 
-            const cardio = datos.filter(d => String(d.Ejercicio).includes('Bicicleta'));
+            const cardio = datos.filter(d => d.Fecha && String(d.Ejercicio).includes('Bicicleta'));
             cardioChart.data.labels = cardio.map(d => new Date(d.Fecha).toLocaleDateString('es-CL', {day: '2-digit', month: '2-digit'}));
             cardioChart.data.datasets[0].data = cardio.map(d => Number(d['Peso (kg)']) || Number(d.Carga) || 0);
             cardioChart.update();
@@ -390,11 +403,14 @@
 
         function procesarEstudios(datos) {
             const conteo = {};
+            let estudiosValidos = [];
+
             datos.forEach(d => {
-                // Transición: Lee 'Materia' en lugar de 'Asignatura'
+                if(!d.Fecha) return;
                 let materia = d.Materia || d.Asignatura;
                 if (materia) {
                     conteo[materia] = (conteo[materia] || 0) + 1;
+                    estudiosValidos.push(d);
                 }
             });
 
@@ -403,7 +419,7 @@
             studyChart.update();
 
             const tbody = document.getElementById('tabla-estudio');
-            const ultimos = datos.slice(-5).reverse();
+            const ultimos = estudiosValidos.slice(-5).reverse();
             
             if (ultimos.length > 0) {
                 tbody.innerHTML = "";
@@ -423,10 +439,9 @@
         }
 
         function procesarRadar(finanzas, ejercicios, estudios, pesos) {
-            const ptsFuerza = Math.min(100, ejercicios.filter(d => !String(d.Ejercicio).includes('Bicicleta')).length * 10);
-            const ptsCardio = Math.min(100, ejercicios.filter(d => String(d.Ejercicio).includes('Bicicleta')).length * 15);
-            const ptsEstudio = Math.min(100, estudios.length * 5);
-            // La disciplina ahora se mide por la constancia en el registro de peso en su nueva pestaña
+            const ptsFuerza = Math.min(100, ejercicios.filter(d => d.Ejercicio && !String(d.Ejercicio).includes('Bicicleta')).length * 10);
+            const ptsCardio = Math.min(100, ejercicios.filter(d => d.Ejercicio && String(d.Ejercicio).includes('Bicicleta')).length * 15);
+            const ptsEstudio = Math.min(100, estudios.filter(d => d.Fecha).length * 5);
             const ptsDisciplina = Math.min(100, (pesos ? pesos.length : 0) * 10); 
 
             radarChart.data.datasets[0].data = [ptsFuerza, ptsCardio, ptsDisciplina, ptsEstudio];
@@ -435,3 +450,6 @@
 
         // Iniciar carga
         cargarDatos();
+    </script>
+</body>
+</html>
