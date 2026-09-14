@@ -244,7 +244,7 @@
     </main>
 
     <script>
-        function switchTab(event, tabId) {
+   function switchTab(event, tabId) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
@@ -255,14 +255,13 @@
         Chart.defaults.font.family = 'Inter';
         Chart.defaults.scale.grid.color = 'rgba(255, 255, 255, 0.05)';
 
-        // ==========================================
-        const API_URL = "https://script.google.com/macros/s/AKfycbMOOLGa48_yP9Snd9OYnWOQsx0C15zLogStCbSeKl5P43q0VpHGL3JYz74EWkMP6W0fw/exec"; 
-        // ==========================================
+        // URL de tu API de Google Apps Script
+        const API_URL = "https://script.google.com/macros/s/AKfycbRXXLGo48_y9P2nd9DVnqGQqq0CiSziLxgS7cbGmTJP41gVVpIGLl1Vs74Ddd9PGH0fw/exec";
 
         const radarChart = new Chart(document.getElementById('radarChart'), {
             type: 'radar',
             data: {
-                labels: ['Fuerza', 'Cardio', 'Disciplina Gasto', 'Estudio'],
+                labels: ['Fuerza', 'Cardio', 'Disciplina Resto', 'Estudio'],
                 datasets: [{ label: 'Métricas Reales', data: [0,0,0,0], backgroundColor: 'rgba(0, 240, 255, 0.2)', borderColor: '#00f0ff', borderWidth: 2 }]
             },
             options: { responsive: true, maintainAspectRatio: false, scales: { r: { angleLines: { color: 'rgba(255,255,255,0.1)' } } } }
@@ -280,7 +279,7 @@
                 labels: [],
                 datasets: [
                     { label: 'Peso Muerto (kg)', data: [], borderColor: '#00f0ff', backgroundColor: 'rgba(0, 240, 255, 0.1)', tension: 0.3, fill: true },
-                    { label: 'Hip Thrust (kg)', data: [], borderColor: '#9d00ff', tension: 0.3 },
+                    { label: 'Hip Thrust (kg)', data: [], borderColor: '#a855f7', tension: 0.3 },
                     { label: 'Press Banca (kg)', data: [], borderColor: '#ff0055', tension: 0.3 }
                 ]
             },
@@ -289,7 +288,7 @@
 
         const expensesChart = new Chart(document.getElementById('expensesChart'), {
             type: 'doughnut',
-            data: { labels: [], datasets: [{ data: [], backgroundColor: ['#00f0ff', '#ff0055', '#9d00ff', '#222233', '#facc15', '#4ade80'], borderWidth: 0 }] },
+            data: { labels: [], datasets: [{ data: [], backgroundColor: ['#ff0055', '#a855f7', '#22c55e', '#facc15', '#00f0ff'], borderWidth: 0 }] },
             options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'bottom' } } }
         });
 
@@ -301,17 +300,20 @@
 
         async function cargarDatos() {
             try {
-                const [finanzasRes, ejerciciosRes, estudiosRes] = await Promise.all([
+                // Se agregó la llamada a ?tab=peso para leer la nueva hoja
+                const [finanzas, ejercicios, estudios, pesos] = await Promise.all([
                     fetch(API_URL).then(r => r.json()),
                     fetch(API_URL + "?tab=ejercicio").then(r => r.json()),
-                    fetch(API_URL + "?tab=estudio").then(r => r.json())
+                    fetch(API_URL + "?tab=estudio").then(r => r.json()),
+                    fetch(API_URL + "?tab=peso").then(r => r.json())
                 ]);
 
-                procesarFinanzas(finanzasRes);
-                procesarEjercicios(ejerciciosRes);
-                procesarEstudios(estudiosRes);
-                procesarRadar(finanzasRes, ejerciciosRes, estudiosRes);
-                
+                procesarFinanzas(finanzas);
+                procesarEjercicios(ejercicios);
+                procesarEstudios(estudios);
+                procesarPeso(pesos);
+                procesarRadar(finanzas, ejercicios, estudios, pesos);
+
             } catch (error) {
                 console.error("Error al sincronizar con Google Sheets:", error);
             }
@@ -322,92 +324,114 @@
             const gastos = datos.filter(d => d.Tipo === 'Gasto');
             
             let totalMes = 0;
-            const categoriasObj = {};
+            let categoriasObj = {};
 
             gastos.forEach(g => {
                 let fechaGasto = new Date(g.Fecha).toISOString().slice(0, 7);
                 let monto = Number(g.Monto) || 0;
-                if (fechaGasto === mesActual) { totalMes += monto; }
-                categoriasObj[g.Categoría] = (categoriasObj[g.Categoría] || 0) + monto;
+                
+                if (fechaGasto === mesActual) {
+                    totalMes += monto;
+                    categoriasObj[g.Categoría] = (categoriasObj[g.Categoría] || 0) + monto;
+                }
             });
 
-            document.getElementById('ui-gastos').innerText = "$" + totalMes.toLocaleString('es-CL');
+            document.getElementById('el-gasto').innerText = "$" + totalMes.toLocaleString('es-CL');
+            
             expensesChart.data.labels = Object.keys(categoriasObj);
             expensesChart.data.datasets[0].data = Object.values(categoriasObj);
             expensesChart.update();
         }
 
-        function procesarEjercicios(datos) {
-            const pesosCorp = datos.filter(d => d.Ejercicio === 'Peso Corporal' || d.Ejercicio === 'Peso');
-            if(pesosCorp.length > 0) {
-                document.getElementById('ui-peso').innerText = pesosCorp[pesosCorp.length - 1].Carga + " kg";
+        function procesarPeso(pesos) {
+            // Extrae el último peso de la nueva pestaña dedicada
+            if (pesos && pesos.length > 0) {
+                let ultimoRegistro = pesos[pesos.length - 1];
+                let pesoActual = ultimoRegistro['Peso (kg)'] || ultimoRegistro.Peso;
+                if (pesoActual) {
+                    document.getElementById('el-peso').innerText = pesoActual + " kg";
+                }
             }
+        }
 
+        function procesarEjercicios(datos) {
             const haceUnaSemana = new Date();
             haceUnaSemana.setDate(haceUnaSemana.getDate() - 7);
+            
             let volumen = 0;
             datos.forEach(d => {
-                if(new Date(d.Fecha) >= haceUnaSemana && !['Peso Corporal', 'Bicicleta Estática', 'Bicicleta'].includes(d.Ejercicio)) {
-                    volumen += (Number(d.Carga) || 0) * (Number(d.Repeticiones) || 1); 
+                let fechaDate = new Date(d.Fecha);
+                if (fechaDate >= haceUnaSemana && !String(d.Ejercicio).includes('Bicicleta')) {
+                    // Corrección de variable Carga a Peso (kg) según Excel
+                    let carga = Number(d['Peso (kg)']) || Number(d.Carga) || 0;
+                    let reps = Number(d.Repeticiones) || 1;
+                    volumen += carga * reps;
                 }
             });
-            document.getElementById('ui-volumen').innerText = volumen.toLocaleString('es-CL') + " kg";
+            document.getElementById('el-volumen').innerText = volumen.toLocaleString('es-CL') + " kg";
 
             const pesoMuerto = datos.filter(d => d.Ejercicio === 'Peso Muerto');
             const hipThrust = datos.filter(d => d.Ejercicio === 'Hip Thrust');
-            const pressBanca = datos.filter(d => d.Ejercicio === 'Press Banca');
-            
+            const pressBanca = datos.filter(d => String(d.Ejercicio).includes('Press Banca') || String(d.Ejercicio).includes('Press de Banca'));
+
             const fechasFuerza = [...new Set(pesoMuerto.concat(hipThrust, pressBanca).map(d => new Date(d.Fecha).toLocaleDateString('es-CL', {day: '2-digit', month: '2-digit'})))];
             
             strengthChart.data.labels = fechasFuerza;
-            strengthChart.data.datasets[0].data = pesoMuerto.map(d => d.Carga);
-            strengthChart.data.datasets[1].data = hipThrust.map(d => d.Carga);
-            strengthChart.data.datasets[2].data = pressBanca.map(d => d.Carga);
+            strengthChart.data.datasets[0].data = pesoMuerto.map(d => Number(d['Peso (kg)']) || Number(d.Carga) || 0);
+            strengthChart.data.datasets[1].data = hipThrust.map(d => Number(d['Peso (kg)']) || Number(d.Carga) || 0);
+            strengthChart.data.datasets[2].data = pressBanca.map(d => Number(d['Peso (kg)']) || Number(d.Carga) || 0);
             strengthChart.update();
 
-            const cardio = datos.filter(d => d.Ejercicio.includes('Bicicleta'));
+            const cardio = datos.filter(d => String(d.Ejercicio).includes('Bicicleta'));
             cardioChart.data.labels = cardio.map(d => new Date(d.Fecha).toLocaleDateString('es-CL', {day: '2-digit', month: '2-digit'}));
-            cardioChart.data.datasets[0].data = cardio.map(d => d.Carga);
+            cardioChart.data.datasets[0].data = cardio.map(d => Number(d['Peso (kg)']) || Number(d.Carga) || 0);
             cardioChart.update();
         }
 
         function procesarEstudios(datos) {
             const conteo = {};
             datos.forEach(d => {
-                if(d.Asignatura) conteo[d.Asignatura] = (conteo[d.Asignatura] || 0) + 1;
+                // Transición: Lee 'Materia' en lugar de 'Asignatura'
+                let materia = d.Materia || d.Asignatura;
+                if (materia) {
+                    conteo[materia] = (conteo[materia] || 0) + 1;
+                }
             });
+
             studyChart.data.labels = Object.keys(conteo);
             studyChart.data.datasets[0].data = Object.values(conteo);
             studyChart.update();
 
-            const tbody = document.getElementById("tabla-estudio");
-            const ultimos = datos.slice(-6).reverse(); 
-            if(ultimos.length > 0) {
+            const tbody = document.getElementById('tabla-estudio');
+            const ultimos = datos.slice(-5).reverse();
+            
+            if (ultimos.length > 0) {
                 tbody.innerHTML = "";
                 ultimos.forEach(fila => {
                     let fecha = new Date(fila.Fecha).toLocaleDateString('es-CL');
+                    let materia = fila.Materia || fila.Asignatura;
+                    
                     tbody.innerHTML += `
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                             <td style="padding: 10px;">${fecha}</td>
-                            <td style="padding: 10px; color: var(--accent-color); font-weight: bold;">${fila.Asignatura}</td>
-                            <td style="padding: 10px;">${fila.Tema}</td>
+                            <td style="padding: 10px; color: var(--accent-color); font-weight: bold;">${materia}</td>
+                            <td style="padding: 10px;">${fila.Tema || '-'}</td>
                         </tr>
                     `;
                 });
             }
         }
 
-        function procesarRadar(finanzas, ejercicios, estudios) {
-            const ptsFuerza = Math.min(100, ejercicios.filter(d => !d.Ejercicio.includes('Bicicleta') && d.Ejercicio !== 'Peso Corporal').length * 10);
-            const ptsCardio = Math.min(100, ejercicios.filter(d => d.Ejercicio.includes('Bicicleta')).length * 15);
+        function procesarRadar(finanzas, ejercicios, estudios, pesos) {
+            const ptsFuerza = Math.min(100, ejercicios.filter(d => !String(d.Ejercicio).includes('Bicicleta')).length * 10);
+            const ptsCardio = Math.min(100, ejercicios.filter(d => String(d.Ejercicio).includes('Bicicleta')).length * 15);
             const ptsEstudio = Math.min(100, estudios.length * 5);
-            const ptsFinanzas = Math.max(0, 100 - (finanzas.filter(d => d.Tipo === 'Gasto').length * 3));
+            // La disciplina ahora se mide por la constancia en el registro de peso en su nueva pestaña
+            const ptsDisciplina = Math.min(100, (pesos ? pesos.length : 0) * 10); 
 
-            radarChart.data.datasets[0].data = [ptsFuerza, ptsCardio, ptsFinanzas, ptsEstudio];
+            radarChart.data.datasets[0].data = [ptsFuerza, ptsCardio, ptsDisciplina, ptsEstudio];
             radarChart.update();
         }
 
+        // Iniciar carga
         cargarDatos();
-    </script>
-</body>
-</html>
