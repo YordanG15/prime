@@ -258,6 +258,20 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- MALLA CURRICULAR UCSC -->
+            <div class="card" style="margin-top: 1.5rem;">
+                <h3>Progreso Malla Curricular (Medicina UCSC)</h3>
+                <div style="margin-bottom: 15px;">
+                    <span id="malla-progreso-text" style="color: var(--accent-color); font-weight: bold; font-size: 1.2rem;">0% Completado</span>
+                    <div style="width: 100%; background: rgba(255,255,255,0.1); height: 10px; border-radius: 5px; margin-top: 5px;">
+                        <div id="malla-progreso-bar" style="width: 0%; background: var(--accent-color); height: 100%; border-radius: 5px; transition: width 0.5s;"></div>
+                    </div>
+                </div>
+                <div id="malla-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; max-height: 400px; overflow-y: auto; padding-right: 10px;">
+                    <!-- La malla se inyectará aquí automáticamente -->
+                </div>
+            </div>
         </section>
 
         <!-- 05. HABILIDADES -->
@@ -348,7 +362,7 @@
         Chart.defaults.font.family = 'Inter';
         Chart.defaults.scale.grid.color = 'rgba(255, 255, 255, 0.05)';
 
-        // URL DE TU API (Actualizada)
+        // URL DE TU API
         const API_URL = "https://script.google.com/macros/s/AKfycbxlO1CR93BMRe82erpTZYV1QGZjVkwS_RVgD4Dv0dA88knps0pxctKsZJI-pIKOGmdYcw/exec";
 
         // Instancias de Gráficos
@@ -403,7 +417,7 @@
         // --------------------------------------------------------
         async function cargarDatos() {
             try {
-                const [finanzas, fuerza, resistencia, estudios, pesos, chamba, habilidades, youtube] = await Promise.all([
+                const [finanzas, fuerza, resistencia, estudios, pesos, chamba, habilidades, youtube, malla] = await Promise.all([
                     fetch(API_URL + "?tab=Transacciones").then(r => r.json()),
                     fetch(API_URL + "?tab=Fuerza").then(r => r.json()),
                     fetch(API_URL + "?tab=Resistencia").then(r => r.json()),
@@ -411,7 +425,8 @@
                     fetch(API_URL + "?tab=Peso Corporal").then(r => r.json()),
                     fetch(API_URL + "?tab=Chamba").then(r => r.json()),
                     fetch(API_URL + "?tab=Habilidades").then(r => r.json()),
-                    fetch(API_URL + "?tab=YouTube").then(r => r.json())
+                    fetch(API_URL + "?tab=YouTube").then(r => r.json()),
+                    fetch(API_URL + "?tab=Estudios_Malla").then(r => r.json())
                 ]);
 
                 procesarFinanzas(finanzas);
@@ -423,6 +438,7 @@
                 procesarYouTube(youtube);
                 procesarRadar(fuerza, resistencia, estudios, pesos);
                 procesarGamificacion(finanzas, fuerza, resistencia, estudios, pesos, chamba, habilidades);
+                procesarMalla(malla); 
 
             } catch (error) {
                 console.error("Error al sincronizar con Google Sheets:", error);
@@ -473,7 +489,6 @@
             const haceUnaSemana = new Date();
             haceUnaSemana.setDate(haceUnaSemana.getDate() - 7);
 
-            // 1. Procesar Volumen Semanal de Fuerza
             if(fuerza) {
                 fuerza.forEach(d => {
                     if(!d.Fecha) return;
@@ -488,7 +503,6 @@
             }
             document.getElementById('el-volumen').innerText = volumenSemanal.toLocaleString('es-CL') + " kg";
 
-            // 2. Gráfico de Fuerza
             if(fuerza) {
                 const pesoMuerto = fuerza.filter(d => d.Fecha && String(d.Ejercicio).includes('Peso Muerto'));
                 const hipThrust = fuerza.filter(d => d.Fecha && String(d.Ejercicio).includes('Hip Thrust'));
@@ -505,7 +519,6 @@
                 strengthChart.update();
             }
 
-            // 3. Gráfico de Resistencia (Cardio)
             if(resistencia) {
                 const cardio = resistencia.filter(d => d.Fecha && String(d.Actividad).includes('Bicicleta'));
                 cardioChart.data.labels = cardio.map(d => new Date(d.Fecha).toLocaleDateString('es-CL', {day: '2-digit', month: '2-digit'}));
@@ -549,6 +562,49 @@
                     `;
                 });
             }
+        }
+
+        function procesarMalla(malla) {
+            if(!malla || malla.length === 0) return;
+            const container = document.getElementById('malla-container');
+            container.innerHTML = '';
+            
+            let aprobados = 0;
+            let total = 0;
+
+            malla.forEach(ramo => {
+                let nombreRamo = ramo.Ramo || ramo.Asignatura;
+                if(!nombreRamo) return;
+                
+                total++;
+                let estado = (ramo.Estado || 'pendiente').toLowerCase();
+                
+                let bgColor = 'rgba(255,255,255,0.05)';
+                let borderColor = 'rgba(255,255,255,0.1)';
+                let textColor = 'var(--text-muted)';
+
+                if(estado === 'aprobado') {
+                    aprobados++;
+                    bgColor = 'rgba(0, 229, 255, 0.1)';
+                    borderColor = 'var(--accent-color)';
+                    textColor = 'var(--accent-color)';
+                } else if(estado === 'cursando') {
+                    bgColor = 'rgba(168, 85, 247, 0.1)'; 
+                    borderColor = '#a855f7';
+                    textColor = '#a855f7';
+                }
+
+                container.innerHTML += `
+                    <div style="background: ${bgColor}; border: 1px solid ${borderColor}; color: ${textColor}; padding: 10px; border-radius: 6px; font-size: 0.85rem; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+                        <strong>${nombreRamo}</strong>
+                        <span style="font-size: 0.75rem; opacity: 0.8; margin-top: 5px;">Semestre ${ramo.Semestre || '-'}</span>
+                    </div>
+                `;
+            });
+
+            let porcentaje = total > 0 ? Math.round((aprobados / total) * 100) : 0;
+            document.getElementById('malla-progreso-text').innerText = `${porcentaje}% Completado (${aprobados}/${total} Ramos)`;
+            document.getElementById('malla-progreso-bar').style.width = `${porcentaje}%`;
         }
 
         function procesarHabilidades(datos) {
@@ -613,7 +669,6 @@
         function procesarGamificacion(...arreglosDeDatos) {
             let xpPorFecha = {};
             
-            // Sumar XP por cada registro válido (10 XP por acción)
             arreglosDeDatos.forEach(arreglo => {
                 if(arreglo) {
                     arreglo.forEach(fila => {
@@ -625,7 +680,6 @@
                 }
             });
 
-            // Convertir para Cal-Heatmap V4 (timestamp en milisegundos)
             let heatmapData = Object.keys(xpPorFecha).map(fecha => {
                 return { 
                     date: new Date(fecha).getTime(), 
@@ -633,26 +687,23 @@
                 };
             });
 
-            // Calcular y Mostrar Nivel
             let totalXP = heatmapData.reduce((sum, item) => sum + item.value, 0);
             let nivel = Math.floor(totalXP / 100) + 1;
             document.getElementById('nivel-text').innerText = "Nivel " + nivel;
             document.getElementById('xp-text').innerText = totalXP + " XP";
 
-            // Renderizar Calendario (Muestra todo el año)
             const cal = new CalHeatmap();
             cal.paint({
                 itemSelector: '#cal-heatmap',
                 domain: { type: 'month', label: { text: 'MMM', textAlign: 'start', position: 'top' } },
                 subDomain: { type: 'ghDay', radius: 2, width: 15, height: 15, gutter: 4 },
                 range: 12, 
-                date: { start: new Date(new Date().getFullYear(), 0, 1) }, // Empieza en enero del año actual
+                date: { start: new Date(new Date().getFullYear(), 0, 1) }, 
                 data: { source: heatmapData, x: 'date', y: 'value' },
                 scale: { color: { type: 'linear', range: ['#0f2e3c', '#00E5FF'], domain: [0, 50] } }
             });
         }
 
-        // Iniciar carga
         cargarDatos();
     </script>
 </body>
