@@ -318,8 +318,6 @@
                 </div>
             </div>
         </section>
-            </div>
-        </section>
     </main>
 
     <script>
@@ -340,22 +338,22 @@
         Chart.defaults.font.family = 'Inter';
         Chart.defaults.scale.grid.color = 'rgba(255, 255, 255, 0.05)';
 
-        // URL DE TU API
-        const API_URL = "https://script.google.com/macros/s/AKfycbxJhSTFAw6QyPAXYtTzHuk4hWD0v3wpwG4w7qlw4GVM3wfnuZshrww_ojCVnwHJISEmSQ/exec";
+        // NUEVA URL DE TU API (Corregida a la proporcionada recientemente)
+        const API_URL = "https://script.google.com/macros/s/AKfycbzRn8Jb1UTf4l5lyozjm_akIQutayCQXNIPNQ2-QWo9IXzawhkEmQqjMzrnYfBFeNZnog/exec";
 
         // Instancias de Gráficos
         const radarChart = new Chart(document.getElementById('radarChart'), {
             type: 'radar',
             data: {
-                labels: ['Fuerza', 'Cardio', 'Disciplina Peso', 'Estudio'],
+                labels: ['Fuerza', 'Cardio', 'Trabajo (Chamba)', 'Estudio'],
                 datasets: [{ label: 'Métricas Reales', data: [0,0,0,0], backgroundColor: 'rgba(0, 240, 255, 0.2)', borderColor: '#00E5FF', borderWidth: 2 }]
             },
-            options: { responsive: true, maintainAspectRatio: false, scales: { r: { angleLines: { color: 'rgba(255,255,255,0.1)' } } } }
+            options: { responsive: true, maintainAspectRatio: false, scales: { r: { angleLines: { color: 'rgba(255,255,255,0.1)' }, grid: {color: 'rgba(255,255,255,0.1)'} } } }
         });
 
         const cardioChart = new Chart(document.getElementById('cardioChart'), {
             type: 'line',
-            data: { labels: [], datasets: [{ label: 'Tiempo/Nivel', data: [], borderColor: '#00E5FF', tension: 0.4, borderWidth: 2 }] },
+            data: { labels: [], datasets: [{ label: 'Tiempo (min)', data: [], borderColor: '#00E5FF', tension: 0.4, borderWidth: 2 }] },
             options: { responsive: true, maintainAspectRatio: false }
         });
 
@@ -391,18 +389,19 @@
         });
 
         // --------------------------------------------------------
-        // CARGA DE DATOS ASÍNCRONA
+        // CARGA DE DATOS ASÍNCRONA (Corregida con los nombres exactos)
         // --------------------------------------------------------
         async function cargarDatos() {
             try {
-                const [finanzas, fuerza, resistencia, estudios, pesos, chamba, habilidades, youtube, malla] = await Promise.all([
-                    fetch(API_URL + "?tab=Transacciones").then(r => r.json()),
-                    fetch(API_URL + "?tab=Fuerza").then(r => r.json()),
-                    fetch(API_URL + "?tab=Resistencia").then(r => r.json()),
-                    fetch(API_URL + "?tab=Estudios").then(r => r.json()),
-                    fetch(API_URL + "?tab=Chamba").then(r => r.json()),
-                    fetch(API_URL + "?tab=Habilidades").then(r => r.json()),
-                    fetch(API_URL + "?tab=Estudios_Malla").then(r => r.json())
+                // Obtenemos los datos, si falla una pestaña, devolvemos array vacío para no quebrar el resto
+                const [finanzas, fuerza, resistencia, estudios, chamba, habilidades, malla] = await Promise.all([
+                    fetch(API_URL + "?tab=Transacciones").then(r => r.json()).catch(() => []),
+                    fetch(API_URL + "?tab=Fuerza").then(r => r.json()).catch(() => []),
+                    fetch(API_URL + "?tab=Resistencia").then(r => r.json()).catch(() => []),
+                    fetch(API_URL + "?tab=Estudios").then(r => r.json()).catch(() => []),
+                    fetch(API_URL + "?tab=Chamba").then(r => r.json()).catch(() => []),
+                    fetch(API_URL + "?tab=Habilidades").then(r => r.json()).catch(() => []),
+                    fetch(API_URL + "?tab=Malla").then(r => r.json()).catch(() => []) 
                 ]);
 
                 procesarFinanzas(finanzas);
@@ -410,8 +409,8 @@
                 procesarEstudios(estudios);
                 procesarChamba(chamba);
                 procesarHabilidades(habilidades);
-                procesarRadar(fuerza, resistencia, estudios, pesos);
-                procesarGamificacion(finanzas, fuerza, resistencia, estudios, pesos, chamba, habilidades);
+                procesarRadar(fuerza, resistencia, estudios, chamba);
+                procesarGamificacion(finanzas, fuerza, resistencia, estudios, chamba, habilidades);
                 procesarMalla(malla); 
 
             } catch (error) {
@@ -423,7 +422,7 @@
         // FUNCIONES DE PROCESAMIENTO
         // --------------------------------------------------------
         function procesarFinanzas(datos) {
-            if (!datos) return;
+            if (!datos || datos.error || !Array.isArray(datos)) return;
             const mesActual = new Date().toISOString().slice(0, 7);
             const gastos = datos.filter(d => d.Tipo === 'Gasto');
             
@@ -437,7 +436,8 @@
                 
                 if (fechaGasto === mesActual) {
                     totalMes += monto;
-                    categoriasObj[g['Categoría'] || g.Categoria] = (categoriasObj[g['Categoría'] || g.Categoria] || 0) + monto;
+                    let categoriaName = g['Categoría'] || g.Categoria || 'Otros';
+                    categoriasObj[categoriaName] = (categoriasObj[categoriaName] || 0) + monto;
                 }
             });
 
@@ -447,23 +447,12 @@
             expensesChart.update();
         }
 
-        function procesarPeso(pesos) {
-            if (pesos && pesos.length > 0) {
-                let pesosValidos = pesos.filter(p => p['Peso (kg)'] || p.Peso);
-                if(pesosValidos.length > 0) {
-                    let ultimoRegistro = pesosValidos[pesosValidos.length - 1];
-                    let pesoActual = ultimoRegistro['Peso (kg)'] || ultimoRegistro.Peso;
-                    if (pesoActual) document.getElementById('el-peso').innerText = pesoActual + " kg";
-                }
-            }
-        }
-
         function procesarEjercicios(fuerza, resistencia) {
             let volumenSemanal = 0;
             const haceUnaSemana = new Date();
             haceUnaSemana.setDate(haceUnaSemana.getDate() - 7);
 
-            if(fuerza) {
+            if(fuerza && Array.isArray(fuerza) && !fuerza.error) {
                 fuerza.forEach(d => {
                     if(!d.Fecha) return;
                     let fechaDate = new Date(d.Fecha);
@@ -474,10 +463,9 @@
                         volumenSemanal += (carga * reps * series);
                     }
                 });
-            }
-            document.getElementById('el-volumen').innerText = volumenSemanal.toLocaleString('es-CL') + " kg";
 
-            if(fuerza) {
+                document.getElementById('el-volumen').innerText = volumenSemanal.toLocaleString('es-CL') + " kg";
+
                 const pesoMuerto = fuerza.filter(d => d.Fecha && String(d.Ejercicio).includes('Peso Muerto'));
                 const hipThrust = fuerza.filter(d => d.Fecha && String(d.Ejercicio).includes('Hip Thrust'));
                 const pressBanca = fuerza.filter(d => d.Fecha && String(d.Ejercicio).includes('Press Banca'));
@@ -493,8 +481,8 @@
                 strengthChart.update();
             }
 
-            if(resistencia) {
-                const cardio = resistencia.filter(d => d.Fecha && String(d.Actividad).includes('Bicicleta'));
+            if(resistencia && Array.isArray(resistencia) && !resistencia.error) {
+                const cardio = resistencia.filter(d => d.Fecha && String(d['Actividad (Bicicleta)'] || d.Actividad).includes('Bicicleta'));
                 cardioChart.data.labels = cardio.map(d => new Date(d.Fecha).toLocaleDateString('es-CL', {day: '2-digit', month: '2-digit'}));
                 cardioChart.data.datasets[0].data = cardio.map(d => Number(d['Tiempo (min)'] || 0));
                 cardioChart.update();
@@ -502,10 +490,10 @@
         }
 
         function procesarEstudios(datos) {
-            if(!datos) return;
+            if(!datos || datos.error || !Array.isArray(datos)) return;
             const conteo = {};
             let estudiosValidos = [];
-            console.log("Datos recibidos:", datos);
+            
             datos.forEach(d => {
                 if(!d.Fecha) return;
                 let materia = d.Ramo || d.Materia || d.Asignatura;
@@ -539,7 +527,7 @@
         }
 
         function procesarMalla(malla) {
-            if(!malla || malla.length === 0) return;
+            if(!malla || malla.error || !Array.isArray(malla) || malla.length === 0) return;
             const container = document.getElementById('malla-container');
             container.innerHTML = '';
             
@@ -551,18 +539,19 @@
                 if(!nombreRamo) return;
                 
                 total++;
-                let estado = (ramo.Estado || 'pendiente').toLowerCase();
+                let estadoString = ramo['Estado (Cursando/Aprobado)'] || ramo.Estado || 'pendiente';
+                let estado = estadoString.toLowerCase();
                 
                 let bgColor = 'rgba(255,255,255,0.05)';
                 let borderColor = 'rgba(255,255,255,0.1)';
                 let textColor = 'var(--text-muted)';
 
-                if(estado === 'aprobado') {
+                if(estado.includes('aprobado')) {
                     aprobados++;
                     bgColor = 'rgba(0, 229, 255, 0.1)';
                     borderColor = 'var(--accent-color)';
                     textColor = 'var(--accent-color)';
-                } else if(estado === 'cursando') {
+                } else if(estado.includes('cursando')) {
                     bgColor = 'rgba(168, 85, 247, 0.1)'; 
                     borderColor = '#a855f7';
                     textColor = '#a855f7';
@@ -582,7 +571,7 @@
         }
 
         function procesarHabilidades(datos) {
-            if(!datos || datos.length === 0) return;
+            if(!datos || datos.error || !Array.isArray(datos) || datos.length === 0) return;
             const tbody = document.getElementById('tabla-habilidades');
             const ultimos = datos.slice(-5).reverse();
             
@@ -601,7 +590,7 @@
         }
 
         function procesarChamba(datos) {
-            if(!datos) return;
+            if(!datos || datos.error || !Array.isArray(datos)) return;
             let categoriasObj = {};
             let totalMensual = 0;
             const mesActual = new Date().toISOString().slice(0, 7);
@@ -622,13 +611,13 @@
             chambaChart.update();
         }
 
-        function procesarRadar(fuerza, resistencia, estudios, pesos) {
-            const ptsFuerza = Math.min(100, (fuerza ? fuerza.length * 10 : 0));
-            const ptsCardio = Math.min(100, (resistencia ? resistencia.length * 15 : 0));
-            const ptsEstudio = Math.min(100, (estudios ? estudios.length * 5 : 0));
-            const ptsDisciplina = Math.min(100, (pesos ? pesos.length * 10 : 0));
+        function procesarRadar(fuerza, resistencia, estudios, chamba) {
+            const ptsFuerza = Math.min(100, (Array.isArray(fuerza) ? fuerza.length * 10 : 0));
+            const ptsCardio = Math.min(100, (Array.isArray(resistencia) ? resistencia.length * 15 : 0));
+            const ptsEstudio = Math.min(100, (Array.isArray(estudios) ? estudios.length * 5 : 0));
+            const ptsTrabajo = Math.min(100, (Array.isArray(chamba) ? chamba.length * 10 : 0)); 
 
-            radarChart.data.datasets[0].data = [ptsFuerza, ptsCardio, ptsDisciplina, ptsEstudio];
+            radarChart.data.datasets[0].data = [ptsFuerza, ptsCardio, ptsTrabajo, ptsEstudio];
             radarChart.update();
         }
 
@@ -636,7 +625,7 @@
             let xpPorFecha = {};
             
             arreglosDeDatos.forEach(arreglo => {
-                if(arreglo) {
+                if(Array.isArray(arreglo) && !arreglo.error) {
                     arreglo.forEach(fila => {
                         if(fila.Fecha) {
                             let fechaStr = new Date(fila.Fecha).toISOString().slice(0, 10);
