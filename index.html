@@ -169,7 +169,6 @@
         <button class="nav-btn" onclick="switchTab(event, 'habilidades')">05. Habilidades</button>
         <button class="nav-btn" onclick="switchTab(event, 'chamba')">06. Chamba</button>
         <button class="nav-btn" onclick="switchTab(event, 'gastos')">07. Gastos</button>
-        <button class="nav-btn" onclick="switchTab(event, 'youtube')">08. YouTube</button>
     </nav>
 
     <main>
@@ -177,10 +176,6 @@
         <section id="principal" class="tab-content active">
             <h2>Panel General</h2>
             <div class="grid-container">
-                <div class="card">
-                    <h3>Peso Corporal Actual</h3>
-                    <div class="stat-value" id="el-peso">-- kg</div>
-                </div>
                 <div class="card">
                     <h3>Volumen Semanal Levantado</h3>
                     <div class="stat-value" id="el-volumen">-- kg</div>
@@ -323,23 +318,6 @@
                 </div>
             </div>
         </section>
-
-        <!-- 08. YOUTUBE -->
-        <section id="youtube" class="tab-content">
-            <h2>Creación de Contenido</h2>
-            <div class="grid-container">
-                <div class="card">
-                    <h3>Vistas Totales</h3>
-                    <div class="stat-value" id="yt-vistas">--</div>
-                </div>
-                <div class="card">
-                    <h3>Suscriptores</h3>
-                    <div class="stat-value" id="yt-subs">--</div>
-                </div>
-                <div class="card">
-                    <h3>Videos Publicados</h3>
-                    <div class="stat-value" id="yt-videos">--</div>
-                </div>
             </div>
         </section>
     </main>
@@ -363,7 +341,7 @@
         Chart.defaults.scale.grid.color = 'rgba(255, 255, 255, 0.05)';
 
         // URL DE TU API
-        const API_URL = "https://script.google.com/macros/s/AKfycbxlO1CR93BMRe82erpTZYV1QGZjVkwS_RVgD4Dv0dA88knps0pxctKsZJI-pIKOGmdYcw/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbxJhSTFAw6QyPAXYtTzHuk4hWD0v3wpwG4w7qlw4GVM3wfnuZshrww_ojCVnwHJISEmSQ/exec";
 
         // Instancias de Gráficos
         const radarChart = new Chart(document.getElementById('radarChart'), {
@@ -422,20 +400,16 @@
                     fetch(API_URL + "?tab=Fuerza").then(r => r.json()),
                     fetch(API_URL + "?tab=Resistencia").then(r => r.json()),
                     fetch(API_URL + "?tab=Estudios").then(r => r.json()),
-                    fetch(API_URL + "?tab=Peso Corporal").then(r => r.json()),
                     fetch(API_URL + "?tab=Chamba").then(r => r.json()),
                     fetch(API_URL + "?tab=Habilidades").then(r => r.json()),
-                    fetch(API_URL + "?tab=YouTube").then(r => r.json()),
                     fetch(API_URL + "?tab=Estudios_Malla").then(r => r.json())
                 ]);
 
                 procesarFinanzas(finanzas);
                 procesarEjercicios(fuerza, resistencia);
                 procesarEstudios(estudios);
-                procesarPeso(pesos);
                 procesarChamba(chamba);
                 procesarHabilidades(habilidades);
-                procesarYouTube(youtube);
                 procesarRadar(fuerza, resistencia, estudios, pesos);
                 procesarGamificacion(finanzas, fuerza, resistencia, estudios, pesos, chamba, habilidades);
                 procesarMalla(malla); 
@@ -646,14 +620,6 @@
             chambaChart.data.labels = Object.keys(categoriasObj);
             chambaChart.data.datasets[0].data = Object.values(categoriasObj);
             chambaChart.update();
-        }
-
-        function procesarYouTube(datos) {
-            if(!datos || datos.length === 0) return;
-            let ultimo = datos[datos.length - 1];
-            if (ultimo.Vistas) document.getElementById('yt-vistas').innerText = Number(ultimo.Vistas).toLocaleString('es-CL');
-            if (ultimo.Suscriptores) document.getElementById('yt-subs').innerText = Number(ultimo.Suscriptores).toLocaleString('es-CL');
-            if (ultimo.Videos) document.getElementById('yt-videos').innerText = Number(ultimo.Videos).toLocaleString('es-CL');
         }
 
         function procesarRadar(fuerza, resistencia, estudios, pesos) {
