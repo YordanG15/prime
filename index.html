@@ -338,7 +338,7 @@
         Chart.defaults.font.family = 'Inter';
         Chart.defaults.scale.grid.color = 'rgba(255, 255, 255, 0.05)';
 
-        // NUEVA URL DE TU API (Corregida a la proporcionada recientemente)
+        // URL DE TU API (Confirmada)
         const API_URL = "https://script.google.com/macros/s/AKfycbzRn8Jb1UTf4l5lyozjm_akIQutayCQXNIPNQ2-QWo9IXzawhkEmQqjMzrnYfBFeNZnog/exec";
 
         // Instancias de Gráficos
@@ -389,21 +389,32 @@
         });
 
         // --------------------------------------------------------
-        // CARGA DE DATOS ASÍNCRONA (Corregida con los nombres exactos)
+        // CARGA SECUENCIAL DE DATOS (Soluciona el error 404 de Google)
         // --------------------------------------------------------
         async function cargarDatos() {
             try {
-                // Obtenemos los datos, si falla una pestaña, devolvemos array vacío para no quebrar el resto
-                const [finanzas, fuerza, resistencia, estudios, chamba, habilidades, malla] = await Promise.all([
-                    fetch(API_URL + "?tab=Transacciones").then(r => r.json()).catch(() => []),
-                    fetch(API_URL + "?tab=Fuerza").then(r => r.json()).catch(() => []),
-                    fetch(API_URL + "?tab=Resistencia").then(r => r.json()).catch(() => []),
-                    fetch(API_URL + "?tab=Estudios").then(r => r.json()).catch(() => []),
-                    fetch(API_URL + "?tab=Chamba").then(r => r.json()).catch(() => []),
-                    fetch(API_URL + "?tab=Habilidades").then(r => r.json()).catch(() => []),
-                    fetch(API_URL + "?tab=Malla").then(r => r.json()).catch(() => []) 
-                ]);
+                // Función auxiliar que obtiene la tabla y devuelve array vacío si hay error
+                const fetchTable = async (tabName) => {
+                    try {
+                        const response = await fetch(API_URL + "?tab=" + tabName);
+                        const json = await response.json();
+                        return Array.isArray(json) ? json : [];
+                    } catch (e) {
+                        console.error("Error obteniendo tabla:", tabName, e);
+                        return [];
+                    }
+                };
 
+                // Pedimos las tablas UNA POR UNA. Esto evita saturar a Google.
+                const finanzas = await fetchTable("Transacciones");
+                const fuerza = await fetchTable("Fuerza");
+                const resistencia = await fetchTable("Resistencia");
+                const estudios = await fetchTable("Estudios");
+                const chamba = await fetchTable("Chamba");
+                const habilidades = await fetchTable("Habilidades");
+                const malla = await fetchTable("Malla"); 
+
+                // Una vez cargadas todas, procesamos la info en el Dashboard
                 procesarFinanzas(finanzas);
                 procesarEjercicios(fuerza, resistencia);
                 procesarEstudios(estudios);
